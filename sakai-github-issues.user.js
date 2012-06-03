@@ -110,7 +110,6 @@ var makeRequest = function(url, callback) {
 var getJiraIssue = function(issueId, callback) {
     // SELECT key, fields.status.value, fields.issuetype.value, fields.priority.value, fields.fixVersions.value, fields.summary.value, fields.description.value FROM json WHERE url = "https://jira.sakaiproject.org/rest/api/2.0.alpha1/issue/SAKIII-3434"
     var url = "http://query.yahooapis.com/v1/public/yql?q=SELECT%20key%2C%20fields.status.value%2C%20fields.issuetype.value%2C%20fields.priority.value%2C%20fields.fixVersions.value%2C%20fields.summary.value%2C%20fields.description.value%20FROM%20json%20WHERE%20url%20%3D%20%22https%3A%2F%2Fjira.sakaiproject.org%2Frest%2Fapi%2F2.0.alpha1%2Fissue%2F" + issueId + "%22&format=json&callback=";
-    console.log(issueId);
     makeRequest(url, callback);
 };
 
@@ -123,7 +122,6 @@ var constructIssuePartial = function(status, image) {
 };
 
 var addIssueInfo = function(issue) {
-    console.log(issue);
     var githubIssue = document.querySelector('.issue[data-key="' + issue.key + '"]');
     var infoWrapper = githubIssue.querySelector('.info .wrapper');
 
@@ -138,7 +136,6 @@ var addIssueInfo = function(issue) {
     infoUl.innerHTML = infoUlHTML;
 
     var infoP = document.createElement('p');
-    console.log(issue.description);
     var infoPHTML = '<a href="https://jira.sakaiproject.org/browse/' + issue.key + '" title="' + htmlEntities(issue.description) + '">' + issue.key + '</a> - ';
     infoPHTML += issue.summary;
     infoP.innerHTML = infoPHTML;
