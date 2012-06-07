@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Sakai Github Issues
-// @version 0.1
+// @version 0.2
 // @namespace http://denbuzze.com/
 // @description Link Sakai jira & github together
 // @match https://*.github.com/sakaiproject/3akai-ux/issues*
@@ -9,6 +9,8 @@
 
 var jiraImageBaseURL = 'https://jira.sakaiproject.org/images/icons/';
 var sakaiRegex = /(SAKIII|KERN)-\d+/g;
+var githubProject = 'sakaiproject/3akai-ux';
+var githubIssues = '';
 
 var htmlEntities = function(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -72,36 +74,17 @@ var getLastElementAfterSplit = function(input) {
     return array[array.length-1];
 };
 
-var passRequest = function(config, callback) {
-    var target = config.event.currentTarget;
+var passRequest = function(event, callback) {
+    var target = event.currentTarget;
     if (target.readyState === 4 && target.status === 200) {
-        var jsonobj = JSON.parse(target.responseText);
-        var issue = jsonobj.query.results.json;
-        var statusId = getLastElementAfterSplit(issue.fields.status.value.self);
-        var issueTypeId = getLastElementAfterSplit(issue.fields.issuetype.value.self);
-        var priorityId = getLastElementAfterSplit(issue.fields.priority.value.self);
-
-        callback({
-            description: issue.fields.description.value,
-            fixVersion: issue.fields.fixVersions.value.name,
-            issueType: issue.fields.issuetype.value.name,
-            issueTypeImage: getIssueTypeImage(issueTypeId),
-            key: issue.key,
-            priority: issue.fields.priority.value.name,
-            priorityImage: getPriorityImage(priorityId),
-            status: issue.fields.status.value.name,
-            statusImage: getStatusImage(statusId),
-            summary: issue.fields.summary.value
-        });
+        callback(target.responseText);
     }
 };
 
 var makeRequest = function(url, callback) {
     var httpRequest = new XMLHttpRequest();
     httpRequest.onreadystatechange = function(event) {
-        passRequest({
-            event: event
-        }, callback);
+        passRequest(event, callback);
     };
     httpRequest.open('GET', url);
     httpRequest.send();
@@ -145,10 +128,48 @@ var addIssueInfo = function(issue) {
     infoWrapper.appendChild(infoDiv);
 };
 
+var parseIssueInfo = function(response) {
+
+    var jsonobj = JSON.parse(response);
+    var issue = jsonobj.query.results.json;
+    var statusId = getLastElementAfterSplit(issue.fields.status.value.self);
+    var issueTypeId = getLastElementAfterSplit(issue.fields.issuetype.value.self);
+    var priorityId = getLastElementAfterSplit(issue.fields.priority.value.self);
+
+    addIssueInfo({
+        description: issue.fields.description.value,
+        fixVersion: issue.fields.fixVersions.value.name,
+        issueType: issue.fields.issuetype.value.name,
+        issueTypeImage: getIssueTypeImage(issueTypeId),
+        key: issue.key,
+        priority: issue.fields.priority.value.name,
+        priorityImage: getPriorityImage(priorityId),
+        status: issue.fields.status.value.name,
+        statusImage: getStatusImage(statusId),
+        summary: issue.fields.summary.value
+    });
+};
+
+var parseUnableMerge = function(response) {
+    var jsonobj = JSON.parse(response);
+    var githubIssue = document.querySelector('#issue_' + jsonobj.number + ' .number');
+    if (!jsonobj.mergeable) {
+        githubIssue.setAttribute('style', 'color: #ff0000');
+    } else {
+        githubIssue.setAttribute('style', 'color: #629632');
+    }
+};
+
+var getMergeable = function(issueId) {
+    var githubIssuesURL = 'https://api.github.com/repos/' + githubProject + '/pulls/' + issueId;
+    makeRequest(githubIssuesURL, parseUnableMerge);
+};
+
 var parseGithubIssues = function() {
-    var githubIssues = document.querySelectorAll('.issue');
+    githubIssues = document.querySelectorAll('.issue');
     for (var i = 0; i < githubIssues.length; i++) {
         var githubIssue = githubIssues[i];
+        getMergeable(githubIssue.id.split('_')[1]);
         var title = githubIssue.querySelector(".info .wrapper h3 a");
         var titleText = title.innerHTML;
         sakaiRegex.lastIndex = 0;
@@ -156,7 +177,7 @@ var parseGithubIssues = function() {
         if (regexArray) {
             var issueId = regexArray[0];
             githubIssue.setAttribute('data-key', issueId);
-            getJiraIssue(issueId, addIssueInfo);
+            getJiraIssue(issueId, parseIssueInfo);
         }
     }
 };
