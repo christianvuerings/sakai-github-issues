@@ -1,15 +1,17 @@
 // ==UserScript==
 // @name Sakai Github Issues
-// @version 0.3
+// @version 0.4
 // @namespace http://denbuzze.com/
 // @description Link Sakai jira & github together
 // @match https://*.github.com/sakaiproject/3akai-ux/issues*
 // @include https://*github.com/sakaiproject/3akai-ux/issues*
+// @match https://*.github.com/sakaiproject/nakamura/issues*
+// @include https://*github.com/sakaiproject/nakamura/issues*
 // ==/UserScript==
 
 var jiraImageBaseURL = 'https://jira.sakaiproject.org/images/icons/';
 var sakaiRegex = /(SAKIII|KERN)-\d+/g;
-var githubProject = 'sakaiproject/3akai-ux';
+var githubProject = '';
 var githubIssues = '';
 
 var htmlEntities = function(str) {
@@ -53,7 +55,8 @@ var getIssueTypeImage = function(id) {
         '6': 'health.gif',
         '7': 'improvement.gif',
         '8': 'genericissue.gif',
-        '20': 'bug.gif'
+        '20': 'bug.gif',
+        '25': 'improvement.gif'
     };
     return issueTypeImages[id] ? jiraImageBaseURL + issueTypeImages[id] : '';
 };
@@ -136,10 +139,11 @@ var parseIssueInfo = function(response) {
     var statusId = getLastElementAfterSplit(issue.fields.status.value.self);
     var issueTypeId = getLastElementAfterSplit(issue.fields.issuetype.value.self);
     var priorityId = getLastElementAfterSplit(issue.fields.priority.value.self);
+    var fixVersion = issue.fields.fixVersions ? issue.fields.fixVersions.value.name : 'none';
 
     addIssueInfo({
         description: issue.fields.description.value,
-        fixVersion: issue.fields.fixVersions.value.name,
+        fixVersion: fixVersion,
         issueType: issue.fields.issuetype.value.name,
         issueTypeImage: getIssueTypeImage(issueTypeId),
         key: issue.key,
@@ -183,7 +187,17 @@ var parseGithubIssues = function() {
     }
 };
 
+var getGithubProject = function() {
+    var locationPath = document.location.pathname;
+    if (locationPath === '/sakaiproject/nakamura/issues') {
+        githubProject = 'sakaiproject/nakamura';
+    } else {
+        githubProject = 'sakaiproject/3akai-ux';
+    }
+};
+
 var init = function() {
+    getGithubProject();
     parseGithubIssues();
     addGlobalCSS('' +
         ' .sakiii-jirainfo { background: #fff; border: 1px solid #eaeaea; color: #000; margin-top: 5px; padding: 5px; }' +
