@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Sakai Github Issues
-// @version 0.2
+// @version 0.3
 // @namespace http://denbuzze.com/
 // @description Link Sakai jira & github together
 // @match https://*.github.com/sakaiproject/3akai-ux/issues*
@@ -132,6 +132,7 @@ var parseIssueInfo = function(response) {
 
     var jsonobj = JSON.parse(response);
     var issue = jsonobj.query.results.json;
+    issue = Array.isArray(issue) ? issue[0] : issue;
     var statusId = getLastElementAfterSplit(issue.fields.status.value.self);
     var issueTypeId = getLastElementAfterSplit(issue.fields.issuetype.value.self);
     var priorityId = getLastElementAfterSplit(issue.fields.priority.value.self);
