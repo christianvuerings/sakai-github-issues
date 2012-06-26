@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Sakai Github Issues
-// @version 0.4
+// @version 0.5
 // @namespace http://denbuzze.com/
 // @description Link Sakai jira & github together
 // @match https://*.github.com/sakaiproject/3akai-ux/issues*
@@ -157,8 +157,12 @@ var parseIssueInfo = function(response) {
 
 var parseUnableMerge = function(response) {
     var jsonobj = JSON.parse(response);
+    if (!jsonobj || !jsonobj.query || !jsonobj.query.results || !jsonobj.query.results.json) {
+        return;
+    }
+    jsonobj = jsonobj.query.results.json;
     var githubIssue = document.querySelector('#issue_' + jsonobj.number + ' .number');
-    if (!jsonobj.mergeable) {
+    if (jsonobj.mergeable === 'false') {
         githubIssue.setAttribute('style', 'color: #ff0000');
     } else {
         githubIssue.setAttribute('style', 'color: #629632');
@@ -166,7 +170,8 @@ var parseUnableMerge = function(response) {
 };
 
 var getMergeable = function(issueId) {
-    var githubIssuesURL = 'https://api.github.com/repos/' + githubProject + '/pulls/' + issueId;
+    //var githubIssuesURL = 'https://api.github.com/repos/' + githubProject + '/pulls/' + issueId;
+    githubIssuesURL = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20json%20where%20url%3D'https%3A%2F%2Fapi.github.com%2Frepos%2F" + encodeURIComponent(githubProject) + "%2Fpulls%2F" + encodeURIComponent(issueId) + "'&format=json&callback=";
     makeRequest(githubIssuesURL, parseUnableMerge);
 };
 
